@@ -19,3 +19,9 @@ def tokenize(text):
     """
     text = text.split()
     return text
+
+def preprocess_data():
+    """
+    For each dataset consider x and y (labels).
+    """
+    pass
