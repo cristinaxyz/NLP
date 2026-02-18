@@ -11,7 +11,18 @@ def load_data():
 
 def normalization(text):
     text = text.lower()
-    return text
+
+    # Step 1: remove all the special characters from the text -- remaining, words, letters, spaces
+    no_syms = re.sub(r"[^\w\s]", "", text)
+
+    #Step 2: remove accents
+    nfkd_form = unicodedata.normalize("NFKD", no_syms)
+    no_acc = "".join([char for char in nfkd_form if not unicodedata.combining(char)])
+
+    #Step 3: Expanding contractions
+    expanded = contractions.fix(no_acc)
+    
+    return expanded
 
 def tokenize(text):
     """
