@@ -2,6 +2,7 @@ from datasets import load_dataset
 import re
 import unicodedata
 import contractions
+from nltk.stem import WordNetLemmatizer
 
 def load_data():
     ds = load_dataset("sh0416/ag_news")
@@ -24,8 +25,14 @@ def normalization(text):
 
     #Step 3: Expanding contractions
     expanded = contractions.fix(no_acc)
-    
-    return expanded
+
+    #Step 4: Tokenize
+    tokenized = tokenize(expanded)
+
+    #Step 5: Lemmatize
+    lemmatizer = WordNetLemmatizer()
+    outp = "".join(lemmatizer.lemmatize(token) for token in tokenized)
+    return outp
 
 def tokenize(text):
     """
