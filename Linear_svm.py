@@ -4,6 +4,13 @@ from data import load_data, preprocess_data
 from evaluation import evaluate_predictions
 
 def model_linear_svm(): 
+    """
+    Train a linear SVM text classifier by using TF-IDF features.
+    We load the AG news data, preprocesses the text, then
+    convert it to TF-IDF vectrs, trains the svm on the training set.
+    Then evaluates performance on the test set using accuracy, and
+    macro-F1, and a confusion matrix.
+    """
     train_ds, dev_ds, test_ds = load_data()
 
     X_train, y_train = preprocess_data(train_ds)
