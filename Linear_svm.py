@@ -32,9 +32,3 @@ def model_linear_svm():
     print("confusion matrix: ", cm)
 
     return y_pred
-
-#   we may compute directly here the evaluation metrics 
-#   acc, macro_f1, cm = evaluate_predictions(y_test, y_pred)
-#   print("Accuracy:", acc)
-#   print("Macro F1:", macro_f1)
-#   print("Confusion Matrix:", cm)
