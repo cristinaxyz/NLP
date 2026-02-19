@@ -3,7 +3,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from data import load_data, preprocess_data
 from evaluation import evaluate_predictions
 
-def model_linear_svm(): 
+def model_linear_svm(train_ds, dev_ds, test_ds): 
     """
     Train a linear SVM text classifier by using TF-IDF features.
     We load the AG news data, preprocesses the text, then
@@ -11,7 +11,6 @@ def model_linear_svm():
     Then evaluates performance on the test set using accuracy, and
     macro-F1, and a confusion matrix.
     """
-    train_ds, dev_ds, test_ds = load_data()
 
     X_train, y_train = preprocess_data(train_ds)
     X_dev, y_dev = preprocess_data(dev_ds)
@@ -33,4 +32,4 @@ def model_linear_svm():
 
     y_pred = svm.predict(X_test_tfidf)
 
-    return y_pred
+    return y_test, y_pred
