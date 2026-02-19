@@ -12,12 +12,14 @@ def model_linear_svm(train_ds, dev_ds, test_ds):
     macro-F1, and a confusion matrix.
     """
 
+#preprocess 
     X_train, y_train = preprocess_data(train_ds)
     X_dev, y_dev = preprocess_data(dev_ds)
     X_test, y_test = preprocess_data(test_ds)
 
+#TI-IDF
     vectorizer = TfidfVectorizer(
-        analyzer = 'word',
+        analyzer = 'english',
         ngram_range=(1, 1),
         min_df = 2,
         max_df = 0.9
@@ -27,9 +29,10 @@ def model_linear_svm(train_ds, dev_ds, test_ds):
     X_dev_tfidf = vectorizer.transform(X_dev)
     X_test_tfidf = vectorizer.transform(X_test)
 
+#model
     svm = LinearSVC()
     svm.fit(X_train_tfidf, y_train)
-
+#prediction
     y_pred = svm.predict(X_test_tfidf)
 
-    return y_test, y_pred
+    return y_test, y_pred, X_test
