@@ -2,10 +2,7 @@ from datasets import load_dataset
 import re
 import unicodedata
 import contractions
-from nltk.stem import WordNetLemmatizer
-
-import nltk
-
+"""
 # Ensure WordNet and omw-1.4 are downloaded
 try:
     from nltk.corpus import wordnet
@@ -13,7 +10,7 @@ try:
 except LookupError:
     nltk.download('wordnet')
     nltk.download('omw-1.4')
-
+"""
 def load_data():
     ds = load_dataset("sh0416/ag_news")
     seed = 42
@@ -27,22 +24,24 @@ def normalization(text):
     text = text.lower()
 
     # Step 1: remove all the special characters from the text -- remaining, words, letters, spaces
-    no_syms = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"[^\w\s]", "", text)
 
     #Step 2: remove accents
-    nfkd_form = unicodedata.normalize("NFKD", no_syms)
-    no_acc = "".join([char for char in nfkd_form if not unicodedata.combining(char)])
+    nfkd_form = unicodedata.normalize("NFKD", text)
+    text = "".join([char for char in nfkd_form if not unicodedata.combining(char)])
 
     #Step 3: Expanding contractions
-    expanded = contractions.fix(no_acc)
+    text = contractions.fix(text)
 
     #Step 4: Tokenize
-    tokenized = tokenize(expanded)
+    tokenized = tokenize(text)
+
+    return " ".join(tokenized)
 
     #Step 5: Lemmatize
-    lemmatizer = WordNetLemmatizer()
-    outp = "".join(lemmatizer.lemmatize(token) for token in tokenized)
-    return outp
+    #lemmatizer = WordNetLemmatizer()
+    #outp = "".join(lemmatizer.lemmatize(token) for token in tokenized)
+    #return outp
 
 def tokenize(text):
     """
