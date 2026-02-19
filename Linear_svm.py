@@ -33,9 +33,4 @@ def model_linear_svm():
 
     y_pred = svm.predict(X_test_tfidf)
 
-    acc, macro_f1, cm = evaluate_predictions(y_test, y_pred)
-    print("svm accuracy: ", acc)
-    print("svm macro f1: ", macro_f1)
-    print("confusion matrix: ", cm)
-
     return y_pred
