@@ -34,8 +34,18 @@ def tokenize(text):
     text = text.split()
     return text
 
-def preprocess_data():
+def preprocess_data(dataset):
     """
     For each dataset consider x and y (labels).
     """
-    pass
+    X = []
+    y = []
+
+    for element in dataset:
+        title = element["title"]
+        description = element["description"]
+        text = normalization(title) + " " + normalization(description)
+        X.append(text)
+        y.append(element["label"])
+
+    return X, y
