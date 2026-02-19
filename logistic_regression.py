@@ -18,7 +18,7 @@ def model_logistic_reg(train_ds, dev_ds, test_ds):
     X_dev_tfidf = vectorizer.transform(X_dev)
     X_test_tfidf = vectorizer.transform(X_test)
 
-    model = LogisticRegression()
+    model = LogisticRegression(max_iter = 1000)
     model.fit(X_train_tfidf, y_train)
 
     y_pred = model.predict(X_test_tfidf)
