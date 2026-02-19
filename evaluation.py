@@ -8,3 +8,20 @@ def evaluate_predictions(y_true, y_pred):
     cm = confusion_matrix(y_true, y_pred)
     return acc, macro_f1, cm
 
+def get_misclassified_examples(y_test, y_pred, texts, num_examples=20):
+    """
+    Returns misclassified examples.
+    """
+    misclassified = []
+    for text, true, pred in zip(texts, y_test, y_pred):
+        if true != pred:
+            readable_text = text["title"]
+
+            misclassified.append({
+                "text": readable_text,
+                "true_label": true,
+                "predicted_label": pred
+            })
+        if len(misclassified) >= num_examples:
+            break
+    return misclassified

@@ -1,5 +1,5 @@
 from data import load_data
-from evaluation import evaluate_predictions
+from evaluation import *
 from logistic_regression import model_logistic_reg
 from Linear_svm import model_linear_svm
 
@@ -25,6 +25,9 @@ def main():
     print("svm accuracy: ", acc_svm)
     print("svm macro f1: ", macro_f1_svm)
     print("confusion matrix: ", cm_svm)
+
+    print(f"logistic regression misclassified words: {get_misclassified_examples(y_test_reg, y_pred_reg, test_ds)}\n")
+    print(f"linear supervised learning misclassified words: {get_misclassified_examples(y_test_svm,y_pred_svm, test_ds)}")
 
 if __name__ == "__main__":
     main()
