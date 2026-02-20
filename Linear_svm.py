@@ -3,7 +3,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from data import preprocess_data
 from sklearn.metrics import accuracy_score
 
-def model_linear_svm(train_ds, dev_ds, test_ds): 
+def model_linear_svm(train_ds, dev_ds, test_ds, seed): 
     """
     Train a linear SVM text classifier by using TF-IDF features.
     We load the AG news data, preprocesses the text, then
@@ -29,13 +29,12 @@ def model_linear_svm(train_ds, dev_ds, test_ds):
             for max_df in max_df_options:
 
                 vectorizer = TfidfVectorizer(
-                    analyzer = 'word',
                     ngram_range=ngram, 
                     min_df = min_df,
                     max_df = max_df)
                 X_train_tfidf = vectorizer.fit_transform(X_train)
                 X_dev_tfidf = vectorizer.transform(X_dev)
-                model = LinearSVC(max_iter = 1000)
+                model = LinearSVC(max_iter = 1000, random_state=seed)
                 model.fit(X_train_tfidf, y_train)
                 y_dev_pred = model.predict(X_dev_tfidf)
                 dev_acc = accuracy_score(y_dev_pred, y_dev)

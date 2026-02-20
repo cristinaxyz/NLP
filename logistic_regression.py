@@ -3,17 +3,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score
 from data import preprocess_data
 
-def model_logistic_reg(train_ds, dev_ds, test_ds):
+def model_logistic_reg(train_ds, dev_ds, test_ds, seed):
     X_train, y_train = preprocess_data(train_ds)
     X_dev, y_dev = preprocess_data(dev_ds)
     X_test, y_test = preprocess_data(test_ds)
-
-    vectorizer = TfidfVectorizer(
-        analyzer = 'word',
-        ngram_range=(1, 1),
-        min_df = 2,
-        max_df = 0.9
-    )
 
     best_parameters = None
     best_acc = 0 
@@ -41,10 +34,9 @@ def model_logistic_reg(train_ds, dev_ds, test_ds):
                     best_acc = dev_acc
                     best_parameters = (ngram, min_df, max_df)
     
-    print("Best parameters:", best_parameters)
+    print("Best parameters for TD-IDF + Logistic Regression:", best_parameters)
 
     best_vectorizer = TfidfVectorizer(
-                    analyzer = 'word',
                     ngram_range=best_parameters[0], 
                     min_df = best_parameters[1],
                     max_df = best_parameters[2])
@@ -52,7 +44,7 @@ def model_logistic_reg(train_ds, dev_ds, test_ds):
     X_train_tfidf = best_vectorizer.fit_transform(X_train)
     X_test_tfidf = best_vectorizer.transform(X_test)
     
-    final_model = LogisticRegression(max_iter = 1000)
+    final_model = LogisticRegression(max_iter = 1000, random_state=seed)
     final_model.fit(X_train_tfidf, y_train)
 
     y_pred = final_model.predict(X_test_tfidf)

@@ -13,9 +13,8 @@ import contractions
 #     nltk.download('wordnet')
 #     nltk.download('omw-1.4')
 
-def load_data():
+def load_data(seed):
     ds = load_dataset("sh0416/ag_news")
-    seed = 42
     split = ds['train'].train_test_split(test_size = 0.1, seed = seed)
     training_ds = split['train']
     dev_ds = split['test']
