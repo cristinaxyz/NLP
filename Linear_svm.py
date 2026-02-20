@@ -1,7 +1,6 @@
 from sklearn.svm import LinearSVC
 from sklearn.feature_extraction.text import TfidfVectorizer
-from data import load_data, preprocess_data
-from evaluation import evaluate_predictions
+from data import preprocess_data
 
 def model_linear_svm(train_ds, dev_ds, test_ds): 
     """
@@ -19,7 +18,7 @@ def model_linear_svm(train_ds, dev_ds, test_ds):
 
 #TI-IDF
     vectorizer = TfidfVectorizer(
-        analyzer = 'english',
+        analyzer = 'word',
         ngram_range=(1, 1),
         min_df = 2,
         max_df = 0.9
@@ -35,4 +34,4 @@ def model_linear_svm(train_ds, dev_ds, test_ds):
 #prediction
     y_pred = svm.predict(X_test_tfidf)
 
-    return y_test, y_pred, X_test
+    return y_test, y_pred
