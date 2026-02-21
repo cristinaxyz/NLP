@@ -29,7 +29,7 @@ def get_misclassified_examples(y_test, y_pred, texts, num_examples=20):
     return misclassified
 
 def plot_cm(cm, title, path):
-    plt.figure(figsize=(6, 8))
+    plt.figure(figsize=(8, 6))
     plt.imshow(cm, interpolation = 'nearest')
     plt.title(title)
     plt.colorbar()
