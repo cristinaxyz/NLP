@@ -54,7 +54,7 @@ def model_linear_svm(train_ds, dev_ds, test_ds, seed):
     X_test_tfidf = best_vectorizer.transform(X_test)
 
 #model
-    svm = LinearSVC()
+    svm = LinearSVC(max_iter = 1000, random_state=seed)
     svm.fit(X_train_tfidf, y_train)
 
 #prediction
