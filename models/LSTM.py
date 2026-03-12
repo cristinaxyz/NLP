@@ -33,8 +33,7 @@ class LSTMClassifier(nn.Module):
         packed = nn.utils.rnn.pack_padded_sequence(
             emb, lengths.cpu(), batch_first=True, enforce_sorted=False
         )
-        packed_out, _ = self.lstm(packed)
-        outputs, _ = nn.utils.rnn.pad_packed_sequence(packed_out, batch_first=True)
-        rep = torch.max(outputs, dim=1).values
-        rep = self.rep_dropout(rep)
+        _, (h_n, _) = self.lstm(packed)  # h_n: (num_layers * dirs, B, H)
+        h_last = h_n[-1]  # last layer, last direction
+        rep = self.rep_dropout(h_last)
         return self.fc(rep)
