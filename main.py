@@ -2,6 +2,7 @@ from data import load_data
 from evaluation import *
 from models.logistic_regression import model_logistic_reg
 from models.Linear_svm import model_linear_svm
+from models.LSTM import LSTMClassifier
 
 def present_results(train_ds, dev_ds, test_ds, seed, model, model_name, plot_title, plot_file_name):
     y_test, y_pred = model(train_ds, dev_ds, test_ds, seed)
@@ -25,6 +26,13 @@ def main():
 
     present_results(train_ds, dev_ds, test_ds, seed, model_logistic_reg, "Logistic Regression", "Confusion Matrix, model TF-IDF + Logistic Regression", "cm_reg.png")
     present_results(train_ds, dev_ds, test_ds, seed, model_linear_svm, "Linear SVM", "Confusion Matrix, model: TF-IDF + Linear SVM", "cm_svm.png")
+    
+    model_LSTM = LSTMClassifier
+
+    ablation_param = [0.1, 0.3, 0.5]
+
+    for param in ablation_param:
+        model_LSTM = LSTMClassifier(dropout=param)
 
 if __name__ == "__main__":
     main()

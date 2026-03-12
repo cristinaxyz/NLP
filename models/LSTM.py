@@ -1,53 +1,40 @@
-import numpy as np
-import random
-import math
+import torch
+import torch.nn as nn
 
-def sigmoid(x):
-    """
-    Binary classification. Calculates the probability.
-    
-    :param x: Description
-    """
-    return 1. / (1 + np.exp(-x))
+class LSTMClassifier(nn.Module):
+    def __init__(
+        self,
+        vocab_size: int,
+        embed_dim: int = 64,
+        hidden_dim: int = 64,
+        num_layers: int = 2,
+        dropout: float = 0.3,
+        pad_idx: int = 0,
+        num_classes: int = 2,
+        bidirectional: bool = False,
+    ) -> None:
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=pad_idx)
+        self.emb_dropout = nn.Dropout(dropout)
+        self.lstm = nn.LSTM(
+            input_size=embed_dim,
+            hidden_size=hidden_dim,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=dropout if num_layers > 1 else 0.0,
+            bidirectional=bidirectional,
+        )
+        rep_dim = hidden_dim * (2 if bidirectional else 1)
+        self.rep_dropout = nn.Dropout(dropout)
+        self.fc = nn.Linear(rep_dim, num_classes)
 
-def sigmoid_derivative(values): 
-    """
-    part of backpropagation
-    
-    :param values: Description
-    """
-    return values*(1-values)
-
-def tanh_derivative(values):
-    """
-    part of backpropagation
-    
-    :param values: Description
-    """
-    return 1. - values ** 2
-
-def rand_arr(a, b, *args): 
-    """
-    createst uniform random array w/ values in [a,b) and shape args
-    
-    :param a: int
-    :param b: int
-    :param args: Description
-    """
-    np.random.seed(0) 
-    #rescales numbers from [0,1] to [a,b]
-    return np.random.rand(*args) * (b - a) + a
-
-def lstm_model(train_ds, dev_ds, test_ds, seed):
-    """
-    Docstring for lstm_model
-    
-    :param train_ds: Description
-    :param dev_ds: Description
-    :param test_ds: Description
-    :param seed: Description
-    """
-    #input gate -- lets in optional information necessary from the current cell state.
-    #output gate -- updates and finalizes the next hidden state
-    #forget gate -- eliminates unnecessary information
-    pass
+    def forward(self, x: torch.Tensor, lengths: torch.Tensor) -> torch.Tensor:
+        emb = self.emb_dropout(self.embedding(x))  
+        packed = nn.utils.rnn.pack_padded_sequence(
+            emb, lengths.cpu(), batch_first=True, enforce_sorted=False
+        )
+        packed_out, _ = self.lstm(packed)
+        outputs, _ = nn.utils.rnn.pad_packed_sequence(packed_out, batch_first=True)
+        rep = torch.max(outputs, dim=1).values
+        rep = self.rep_dropout(rep)
+        return self.fc(rep)
