@@ -1,64 +1,38 @@
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, Conv1D, GlobalMaxPooling1D, Dense, Dropout
-from tensorflow.keras.datasets import imdb
-from tensorflow.keras.preprocessing import sequence
-from data import preprocess_data
+import torch
+import torch.nn as nn 
 
+class CNNClassifier(nn.Module): 
+    def __init__(
+            self, 
+            vocab_size: int, 
+            embed_dim: int = 64, 
+            num_filters: int = 64, 
+            kernel_sizes: tuple = (3,4,5), 
+            dropout: float = 0.3, 
+            pad_idx: int = 0, 
+            num_classes: int = 4,   #we have 4 labels
+    ) -> None: 
+        super().__init__() 
+        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=pad_idx)
+        self.emb_dropout = nn.Dropout(dropout)
+        self.convs = nn.ModuleList(
+            [nn.Conv1d(in_channels=embed_dim, out_channels=num_filters, kernel_size=k) 
+             for k in kernel_sizes]
+        )
 
-def cnn_model(train_ds, dev_ds, test_ds, seed):
+        self.rep_dropout = nn.Dropout(dropout)
+        self.fc = nn.Linear(num_filters * len(kernel_sizes), num_classes)
 
-    #Step 1: preprocess
-    X_train, y_train = preprocess_data(train_ds)
-    X_dev, y_dev = preprocess_data(dev_ds)
-    X_test, y_test = preprocess_data(test_ds)
+    def forward(self, x: torch.Tensor, lengths: torch.Tensor) -> torch.Tensor: 
+        emb = self.emb_dropout(self.embedding(x)) #(B,T,E)
+        emb_t = emb.transpose(1,2) 
+        
+        pooled = []
+        for conv in self.convs: 
+            z = torch.relu(conv(emb_t))
+            p = torch.max(z, dim=2).values 
+            pooled.append(p)
 
-    #Step 2: set parameters
-    vocab_size = 10000 #max numbers of words in vocab
-    max_length = 500 #max sequence of length
-    embedding_dim = 100 #word vector dimension
-    filters = 128 #the amount of CNN filters
-    kernel_size = 5
-    dense_units = 64 #number of neurons in dense layer
-    dropout_rate = 0.5
-    batch_size = 32
-    epochs = 10
-
-
-    model = Sequential([
-        #convert words into vectors
-        Embedding(vocab_size, embedding_dim, input_length=max_length), 
-         #detects local patterns in word sequences
-        Conv1D(filters=filters, kernel_size=kernel_size, activation='relu'),
-        #reduces the output to its strongest signal, prevents overfitting 
-        GlobalMaxPooling1D(), 
-        #combines all features from before and finds their relationship
-        Dense(dense_units, activation='relu'),
-         #regularization to prevent overfitting 
-        Dropout(dropout_rate),
-         #probability for binary classification
-        Dense(1, activation='sigmoid')
-    ])
-
-    model.compile(
-        optimizer='adam',
-        loss='binary_crossentropy',
-        metrics=['accuracy']
-    )
-
-    #Step 4: train model
-    model.fit(
-        X_train, y_train,
-        validation_data=(X_dev, y_dev),
-        batch_size=batch_size,
-        epochs=epochs,
-        shuffle=True
-    )
-
-    #Step 5: predict on test set
-    y_pred_prob = model.predict(X_test)
-    # converts probabilities to binary predictions
-    y_pred = (y_pred_prob > 0.5).astype(int).flatten()
-
-    return y_test, y_pred
+        rep = torch.cat(pooled, dim=1)
+        rep = self.rep_dropout(rep) 
+        return self.fc(rep) 

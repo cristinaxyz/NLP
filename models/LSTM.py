@@ -10,7 +10,7 @@ class LSTMClassifier(nn.Module):
         num_layers: int = 2,
         dropout: float = 0.3,
         pad_idx: int = 0,
-        num_classes: int = 2,
+        num_classes: int = 4,
         bidirectional: bool = False,
     ) -> None:
         super().__init__()
