@@ -80,6 +80,7 @@ def evaluate(model, loader, device) -> dict:
         "loss": total_loss / max(1, n),
         "acc": accuracy_score(y_true, y_pred),
         "f1": f1_score(y_true, y_pred, average="macro"),
+        "cm": cm,
         "y_true": y_true,
         "y_pred": y_pred,
     }
@@ -169,22 +170,23 @@ def plot_cm(cm, title, path):
     plt.show()
     plt.close()
 
-    def plot_learning_curves(results, key: str, title: str, ylabel: str, path: str):
-        plt.figure()
+def plot_learning_curves(results, key: str, title: str, ylabel: str, path: str):
+    plt.figure()
 
-        for res in results:
-            hist = res["hist"]
-            epochs = [h["epoch"] for h in hist]
-            vals = [h[key] for h in hist]
-            plt.plot(epochs, vals, label=res["name"])
+    for res in results:
+        hist = res["hist"]
+        epochs = [h["epoch"] for h in hist]
+        vals = [h[key] for h in hist]
+        plt.plot(epochs, vals, label=res["name"])
 
-        plt.xlabel("epoch")
-        plt.ylabel(ylabel)
-        plt.title(title)
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(path)
-        plt.close()
+    plt.xlabel("epoch")
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(path)
+    plt.close()
     
-    plot_learning_curves([res_lstm, res_cnn], "val_loss", "Validation loss", "loss")
-    plot_learning_curves([res_lstm, res_cnn], "val_f1", "Validation macro F1", "macro F1")
+    #in main/py
+    #plot_learning_curves([res_lstm, res_cnn], "val_loss", "Validation loss", "loss")
+    #plot_learning_curves([res_lstm, res_cnn], "val_f1", "Validation macro F1", "macro F1")
