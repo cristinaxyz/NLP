@@ -243,7 +243,7 @@ def main():
             patience=3,
         )
 
-        ablation_results = evaluate_model(ablation_model, test_loader, device)
+        ablation_results = evaluate_model(ablation_model, dev_loader, device)
 
         print(
             f"dropout={dropout_value} | "
