@@ -21,7 +21,7 @@ def get_misclassified_examples(model: nn.Module, raw_split, vocab, max_length, d
     model.eval()
     errs = []
     for ex in raw_split:
-        text = normalization["title"] + " " + normalization["description"]
+        text = ex["title"] + " " + ex["description"]
         tokens = tokenize(text)
         ids = numericalize(tokens, vocab)[:max_length]
         if len(ids) == 0:
