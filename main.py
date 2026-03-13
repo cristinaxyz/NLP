@@ -1,8 +1,14 @@
-import torch 
+import torch
+import torch.nn as nn 
 from data import load_data, build_loaders
-from evaluation import (train_model, evaluate_model, plot_cm, plot_learning_curves, get_misclassified_examples)
+from evaluation import (train_model, evaluate_model, plot_cm, plot_learning_curves, get_misclassified_examples, show_errors)
 from models.LSTM import LSTMClassifier
 from models.CNN import CNNClassifier
+from pandas import DataFrame
+import time 
+import random 
+import numpy as np
+
 
 """
 def present_results(train_ds, dev_ds, test_ds, seed, model, model_name, plot_title, plot_file_name):
@@ -15,9 +21,22 @@ def present_results(train_ds, dev_ds, test_ds, seed, model, model_name, plot_tit
     print(f"Misclassified words: {get_misclassified_examples(y_test, y_pred, test_ds)}\n")
     plot_cm(cm, plot_title, plot_file_name)
 """
+    
+def set_seed(seed: int = 13) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
 
-def train_and_report(model, model_name, train_loader, dev_loader, test_loader, test_ds, device, lr, max_epochs):
-    print(f"\nTraining {model_name}...")
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+def count_parameters(model: nn.Module) -> int:
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+def train_and_time(name, model, train_loader, dev_loader, test_loader, device, lr, max_epochs):
+    print(f"\nTraining {name}...")
+
+    t0 = time.perf_counter()
 
     hist = train_model(
         model,
@@ -29,30 +48,23 @@ def train_and_report(model, model_name, train_loader, dev_loader, test_loader, t
         patience=3,
     )
 
-    results = evaluate_model(model, test_loader, device)
+    total_time = time.perf_counter() - t0
+    val = evaluate_model(model, dev_loader, device)
+    test = evaluate_model(model, test_loader, device)
 
-    print(f"\n{model_name} results")
-    print("Accuracy:", results["acc"])
-    print("Macro F1:", results["f1"])
-
-    plot_cm(results["cm"], f"Confusion Matrix - {model_name}", f"cm_{model_name.lower()}.png")
-
-    errors = get_misclassified_examples(
-        results["y_true"],
-        results["y_pred"],
-        test_ds,
-        num_examples=10,
-    )
-
-    print(f"\nSome {model_name} errors:")
-    for err in errors:
-        print(err)
-
-    return hist, results
+    return {
+        "name": name,
+        "hist": hist,
+        "val": val,
+        "test": test,
+        "time_s_total": total_time,
+    }
 
 
 def main():
-    seed = 42
+    seed = 13
+    set_seed(seed)
+
     batch_size = 64
     max_length = 64
     embed_dim = 64
@@ -60,7 +72,7 @@ def main():
     num_filters = 64
     dropout = 0.3
     lr = 1e-3
-    max_epochs = 3
+    max_epochs = 5
 
     if torch.backends.mps.is_available():
         device = torch.device("mps")
@@ -87,7 +99,7 @@ def main():
 
     vocab_size = len(vocab)
 
-    # CNN
+    #CNN model
     cnn_model = CNNClassifier(
         vocab_size=vocab_size,
         embed_dim=embed_dim,
@@ -97,18 +109,6 @@ def main():
         pad_idx=pad_idx,
         num_classes=4,
     ).to(device)
-
-    hist_cnn, cnn_results = train_and_report(
-        cnn_model,
-        "CNN",
-        train_loader,
-        dev_loader,
-        test_loader,
-        test_ds,
-        device,
-        lr,
-        max_epochs,
-    )
 
     # LSTM
     lstm_model = LSTMClassifier(
@@ -122,24 +122,57 @@ def main():
         bidirectional=False,
     ).to(device)
 
-    hist_lstm, lstm_results = train_and_report(
-        lstm_model,
-        "LSTM",
+    print("Number of trainable parameters:")
+    print("LSTM:", count_parameters(lstm_model))
+    print("CNN:", count_parameters(cnn_model))
+    
+    res_cnn = train_and_time(
+        "CNN",
+        cnn_model,
         train_loader,
         dev_loader,
         test_loader,
-        test_ds,
         device,
         lr,
         max_epochs,
     )
 
+    res_lstm = train_and_time(
+        "LSTM",
+        lstm_model,
+        train_loader,
+        dev_loader,
+        test_loader,
+        device,
+        lr,
+        max_epochs,
+    )
+
+    rows = []
+    for res in [res_cnn, res_lstm]: 
+        rows.append([
+            res["name"],
+            res["val"]["acc"],
+            res["val"]["f1"],
+            res["test"]["acc"],
+            res["test"]["f1"],
+            res["time_s_total"],
+        ])
+    
+    df_compare = DataFrame(
+        rows,
+       columns=["model", "val_acc", "val_macro_f1", "test_acc", "test_macro_f1", "train_time_s"],
+    ).sort_values(by=["val_macro_f1", "val_acc"], ascending=False).reset_index(drop=True)
+    print("\n Comparison table: ")
+    print(df_compare)
+
+    #confusion matrix
+    plot_cm(res_cnn["test"]["cm"], "CNN Confusion Matrix", "cnn_cm.png")
+    plot_cm(res_lstm["test"]["cm"], "LSTM Confusion Matrix", "lstm_cm.png")
+
     # comparison plots
     plot_learning_curves(
-        [
-            {"name": "CNN", "hist": hist_cnn},
-            {"name": "LSTM", "hist": hist_lstm},
-        ],
+        [res_lstm, res_cnn],
         "val_loss",
         "Validation Loss",
         "Loss",
@@ -147,15 +180,33 @@ def main():
     )
 
     plot_learning_curves(
-        [
-            {"name": "CNN", "hist": hist_cnn},
-            {"name": "LSTM", "hist": hist_lstm},
-        ],
+        [res_lstm, res_cnn],
         "val_f1",
         "Validation Macro F1",
         "Macro F1",
         "val_f1.png",
     )
+    errs_lstm = get_misclassified_examples(
+        lstm_model,
+        test_ds,
+        vocab,
+        max_length,
+        device,
+        max_items=10,
+    )
+
+    errs_cnn = get_misclassified_examples(
+        cnn_model,
+        test_ds,
+        vocab,
+        max_length,
+        device,
+        max_items=10,
+    )
+
+    show_errors("LSTM errors", errs_lstm[:8])
+    print("\n" + "=" * 80 + "\n")
+    show_errors("CNN errors", errs_cnn[:8])
 
     # ablation
     print("\nAblation study: LSTM dropout")

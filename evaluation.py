@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn 
+import time
+from data import tokenize, numericalize, UNK
 
 
 def evaluate_predictions(y_true, y_pred):
@@ -13,26 +15,47 @@ def evaluate_predictions(y_true, y_pred):
     cm = confusion_matrix(y_true, y_pred)
     return acc, macro_f1, cm
 
-def get_misclassified_examples(y_test, y_pred, texts, num_examples=20):
-    """
-    Returns misclassified examples.
-    """
-    misclassified = []
-    for text, true, pred in zip(texts, y_test, y_pred):
-        if true != pred:
-            readable_text = text["title"] + " " + text["description"]
-            misclassified.append({
-                "text": readable_text,
-                "true_label": true,
-                "predicted_label": pred
-            })
-        if len(misclassified) >= num_examples:
+LABELS = {0: "World", 1: "Sports", 2: "Business", 3: "Sci/Tech",}
+
+def get_misclassified_examples(model: nn.Module, raw_split, vocab, max_length, device, max_items: int = 8):
+    model.eval()
+    errs = []
+    for ex in raw_split:
+        text = ex["title"] + " " + ex["description"]
+        tokens = tokenize(text)
+        ids = numericalize(tokens, vocab)[:max_length]
+        if len(ids) == 0:
+            ids = [vocab[UNK]]
+        x = torch.tensor(ids, dtype=torch.long).unsqueeze(0).to(device)
+        lengths = torch.tensor([len(ids)], dtype=torch.long).to(device)
+        y = int(ex["label"]) - 1
+
+        with torch.no_grad():
+            logits = model(x, lengths)
+            pred = int(logits.argmax(dim=1).item())
+        if pred != y:
+            snippet = text.replace("\n", " ")
+            snippet = snippet[:250] + ("..." if len(snippet) > 250 else "")
+            errs.append((y, pred, snippet))
+        if len(errs) >= max_items:
             break
-    return misclassified
+
+    return errs
+
+def show_errors(name: str, errs):
+    print(name)
+    for i,(y,p,snip) in enumerate(errs):
+        print()
+        print(f"error {i+1}")
+        print("true:", LABELS[y], "pred:", LABELS[p])
+        print("text:", snip)
+
 
 def train_epoch(model, loader, optimizer, criterion, device):
     model.train()
     total_loss = 0.0
+    n = 0
+    correct = 0
 
     for batch in loader:
         x = batch.x.to(device)
@@ -40,16 +63,18 @@ def train_epoch(model, loader, optimizer, criterion, device):
         y = batch.y.to(device)
 
         optimizer.zero_grad()
-
         logits = model(x, lengths)
         loss = criterion(logits, y)
-
         loss.backward()
         optimizer.step()
 
-        total_loss += loss.item()
-
-    return total_loss / len(loader)
+        total_loss += loss.item() * y.size(0)
+        n = n + y.size(0)
+        correct += (logits.argmax(dim=1) ==y).sum().item()
+    
+    train_loss = total_loss / max(1,n)
+    train_acc = correct/max(1,n)
+    return train_loss, train_acc
 
 
 def evaluate(model, loader, device) -> dict:
@@ -78,7 +103,6 @@ def evaluate(model, loader, device) -> dict:
     y_pred = np.concatenate(all_pred)
 
     acc, macro_f1, cm = evaluate_predictions(y_true, y_pred)
-
 
     return {
         "loss": total_loss / max(1, n),
@@ -112,24 +136,31 @@ def train_model(
     hist = []
 
     for epoch in range(1, max_epochs + 1):
-        train_loss = train_epoch(model, train_loader, optimizer, criterion, device)
+        t0 = time.perf_counter()
+
+        train_loss, train_acc = train_epoch(model, train_loader, optimizer, criterion, device)
         val_results = evaluate(model, val_loader, device)
+
+        dt = time.perf_counter() - t0
 
         record = {
             "epoch": epoch,
             "train_loss": train_loss,
+            "train_acc": train_acc,
             "val_loss": val_results["loss"],
             "val_acc": val_results["acc"],
             "val_f1": val_results["f1"],
+            "time_s": dt,
         }
         hist.append(record)
 
         print(
             f"epoch {epoch:02d} | "
-            f"train loss {train_loss:.4f} | "
+            f"train loss {train_loss:.4f} acc {train_acc:.4f} | "
             f"val loss {val_results['loss']:.4f} | "
             f"val acc {val_results['acc']:.4f} | "
-            f"val f1 {val_results['f1']:.4f}"
+            f"val f1 {val_results['f1']:.4f} | "
+            f"time {dt:.1f}s"
         )
 
         if val_results["loss"] < best_val_loss - 1e-6:
