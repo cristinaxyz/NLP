@@ -178,6 +178,14 @@ def main():
         "Loss",
         "val_loss.png",
     )
+    plot_learning_curves(
+    [res_lstm, res_cnn],
+    "train_loss",
+    "Training Loss",
+    "Loss",
+    "train_loss.png",
+    )
+
 
     plot_learning_curves(
         [res_lstm, res_cnn],
@@ -204,9 +212,9 @@ def main():
         max_items=10,
     )
 
-    show_errors("LSTM errors", errs_lstm[:8])
+    show_errors("LSTM errors", errs_lstm[:10])
     print("\n" + "=" * 80 + "\n")
-    show_errors("CNN errors", errs_cnn[:8])
+    show_errors("CNN errors", errs_cnn[:10])
 
     # ablation
     print("\nAblation study: LSTM dropout")
@@ -239,8 +247,8 @@ def main():
 
         print(
             f"dropout={dropout_value} | "
-            f"Accuracy={ablation_results['acc']:.4f} | "
-            f"Macro F1={ablation_results['f1']:.4f}"
+            f" Dev Accuracy={ablation_results['acc']:.4f} | "
+            f" Dev Macro F1={ablation_results['f1']:.4f}"
         )
 
 
