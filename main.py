@@ -72,7 +72,7 @@ def main():
     num_filters = 64
     dropout = 0.3
     lr = 1e-3
-    max_epochs = 5
+    max_epochs = 1
 
     if torch.backends.mps.is_available():
         device = torch.device("mps")
