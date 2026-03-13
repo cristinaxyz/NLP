@@ -76,10 +76,14 @@ def evaluate(model, loader, device) -> dict:
 
     y_true = np.concatenate(all_y)
     y_pred = np.concatenate(all_pred)
+
+    acc, macro_f1, cm = evaluate_predictions(y_true, y_pred)
+
+
     return {
         "loss": total_loss / max(1, n),
-        "acc": accuracy_score(y_true, y_pred),
-        "f1": f1_score(y_true, y_pred, average="macro"),
+        "acc": acc,
+        "f1": macro_f1,
         "cm": cm,
         "y_true": y_true,
         "y_pred": y_pred,
@@ -167,7 +171,6 @@ def plot_cm(cm, title, path):
             plt.text(j, i, cm[i, j], ha="center", va="center")
     plt.tight_layout()
     plt.savefig(path)
-    plt.show()
     plt.close()
 
 def plot_learning_curves(results, key: str, title: str, ylabel: str, path: str):
