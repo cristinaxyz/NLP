@@ -66,9 +66,9 @@ def main():
     set_seed(seed)
 
     batch_size = 64
-    max_length = 64
+    max_length = 128
     embed_dim = 64
-    hidden_dim = 64
+    hidden_dim = 128
     num_filters = 64
     dropout = 0.3
     lr = 1e-3
