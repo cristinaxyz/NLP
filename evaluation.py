@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn 
 import time
-from data import tokenize, numericalize, UNK
+from data import tokenize, numericalize, UNK, normalization
 
 
 def evaluate_predictions(y_true, y_pred):
@@ -21,14 +21,14 @@ def get_misclassified_examples(model: nn.Module, raw_split, vocab, max_length, d
     model.eval()
     errs = []
     for ex in raw_split:
-        text = ex["title"] + " " + ex["description"]
+        text = normalization["title"] + " " + normalization["description"]
         tokens = tokenize(text)
         ids = numericalize(tokens, vocab)[:max_length]
         if len(ids) == 0:
             ids = [vocab[UNK]]
         x = torch.tensor(ids, dtype=torch.long).unsqueeze(0).to(device)
         lengths = torch.tensor([len(ids)], dtype=torch.long).to(device)
-        y = int(ex["label"]) - 1
+        y = int(ex["label"])
 
         with torch.no_grad():
             logits = model(x, lengths)

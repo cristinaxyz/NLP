@@ -60,7 +60,7 @@ def preprocess_data(dataset):
         description = element["description"]
         text = normalization(title) + " " + normalization(description)
         X.append(text)
-        y.append(int(element["label"]) -1) 
+        y.append(int(element["label"])) 
 
     return X, y
 
@@ -107,7 +107,7 @@ class TextDataset(Dataset):
             if len(ids) == 0: 
                 ids = [self.vocab[UNK]]
         
-        label = int(item["label"]) -1
+        label = int(item["label"]) 
         return ids, label 
     
 def collate_fn(batch, pad_idx):
