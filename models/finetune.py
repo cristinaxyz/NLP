@@ -1,12 +1,11 @@
 #Packages
 from transformers import AutoModelForSequenceClassification
 import torch
-from transformers import AutoTokenizer
 from transformers import Trainer, TrainingArguments
 from data import build_tokenizer
 
 
-def fine_tune(train_dataset, test_ds, seed):
+def fine_tune(train_dataset, test_ds, dev_ds):
     """
     fine tuning of a pretrained model
 
@@ -14,7 +13,6 @@ def fine_tune(train_dataset, test_ds, seed):
         train_dataset (_type_): _description_
         dev_ds (_type_): _description_
         test_ds (_type_): _description_
-        seed (_type_): _description_
     """
     #GPU usage
     device = 0 if torch.cuda.is_available() else -1
@@ -26,7 +24,7 @@ def fine_tune(train_dataset, test_ds, seed):
     tokenized_test = test_ds.map(tokenize_fn)
     
     #Load a pretrained model
-    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2).to(
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4).to(
         device
     )
 
@@ -47,3 +45,16 @@ def fine_tune(train_dataset, test_ds, seed):
         train_dataset=tokenized_train,
         eval_dataset=tokenized_test,
     )
+
+    #Fine-tuning the model
+    trainer.train()
+
+    # Get predictions (logits)
+    with torch.no_grad():  # Disable gradient computation since we're just doing inference
+        outputs = model(**dev_ds) #I'm not sure which ds to use, so Im just leaving this for tomorrow
+        logits = outputs.logits #also, this is just for one item, so we have to edit that as well
+
+    predicted_label = torch.argmax(logits, dim=1).item()
+
+
+    return predicted_label
