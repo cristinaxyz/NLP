@@ -16,4 +16,4 @@ For more details on how to install `uv`:
 https://github.com/astral-sh/uv
 
 ## To run the project:
-`uv run main.py`
+`uv run src/main.py`
