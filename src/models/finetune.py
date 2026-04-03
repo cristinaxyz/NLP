@@ -5,7 +5,7 @@ from transformers import Trainer, TrainingArguments
 from ..data import build_tokenizer
 
 
-def fine_tune(train_dataset, test_ds, dev_ds):
+def distilbert_model(train_dataset, test_ds, dev_ds):
     """
     fine tuning of a pretrained model
 
@@ -21,7 +21,8 @@ def fine_tune(train_dataset, test_ds, dev_ds):
     model_name = "distilbert-base-uncased" #We are using distilBERT
     tokenize_fn = build_tokenizer(model_name)
     tokenized_train = train_dataset.map(tokenize_fn, batched=True)
-    tokenized_test = test_ds.map(tokenize_fn)
+    tokenized_test = test_ds.map(tokenize_fn, batched=True)
+    tokenized_dev = dev_ds.map(tokenize_fn, batched=True)
     
     #Load a pretrained model
     model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4).to(
@@ -50,11 +51,11 @@ def fine_tune(train_dataset, test_ds, dev_ds):
     trainer.train()
 
     # Get predictions (logits)
-    with torch.no_grad():  # Disable gradient computation since we're just doing inference
-        outputs = model(**dev_ds) #I'm not sure which ds to use, so Im just leaving this for tomorrow
-        logits = outputs.logits #also, this is just for one item, so we have to edit that as well
+    pred = trainer.predict(tokenized_test)
+    logits = pred.predictions
+    predicted_labels = torch.argmax(torch.tensor(logits), dim=1)
 
-    predicted_label = torch.argmax(logits, dim=1).item()
+    #get true labels
+    true_labels = pred.label_ids
 
-
-    return predicted_label
+    return true_labels, predicted_labels

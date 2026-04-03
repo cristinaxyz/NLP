@@ -6,6 +6,7 @@ from models.LSTM import LSTMClassifier
 from models.CNN import CNNClassifier
 from models.Linear_svm import model_linear_svm
 from models.logistic_regression import model_logistic_reg
+from models.finetune import distilbert_model
 from pandas import DataFrame
 import time 
 import random 
