@@ -2,7 +2,7 @@
 from transformers import AutoModelForSequenceClassification
 import torch
 from transformers import Trainer, TrainingArguments
-from data import build_tokenizer
+from ..data import build_tokenizer
 
 
 def fine_tune(train_dataset, test_ds, dev_ds):

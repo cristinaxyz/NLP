@@ -1,16 +1,16 @@
 import torch
 import torch.nn as nn 
 from data import load_data, build_loaders
-from evaluation import (train_model, evaluate_model, plot_cm, plot_learning_curves, get_misclassified_examples, show_errors)
+from evaluation import (train_model, evaluate_model, plot_cm, plot_learning_curves, get_misclassified_examples, show_errors, evaluate_predictions)
 from models.LSTM import LSTMClassifier
 from models.CNN import CNNClassifier
+from models.Linear_svm import model_linear_svm
+from models.logistic_regression import model_logistic_reg
 from pandas import DataFrame
 import time 
 import random 
 import numpy as np
 
-
-"""
 def present_results(train_ds, dev_ds, test_ds, seed, model, model_name, plot_title, plot_file_name):
     y_test, y_pred = model(train_ds, dev_ds, test_ds, seed)
     acc, macro_f1, cm = evaluate_predictions(y_test, y_pred)
@@ -20,8 +20,11 @@ def present_results(train_ds, dev_ds, test_ds, seed, model, model_name, plot_tit
     print("Confusion Matrix:", cm)
     print(f"Misclassified words: {get_misclassified_examples(y_test, y_pred, test_ds)}\n")
     plot_cm(cm, plot_title, plot_file_name)
-"""
     
+def svm_and_logistic_results(train_ds, dev_ds, test_ds, seed):
+    present_results(train_ds, dev_ds, test_ds, seed, model_logistic_reg, "Logistic Regression", "Confusion Matrix, model TF-IDF + Logistic Regression", "cm_reg.png")
+    present_results(train_ds, dev_ds, test_ds, seed, model_linear_svm, "Linear SVM", "Confusion Matrix, model: TF-IDF + Linear SVM", "cm_svm.png")
+
 def set_seed(seed: int = 13) -> None:
     random.seed(seed)
     np.random.seed(seed)
@@ -61,7 +64,7 @@ def train_and_time(name, model, train_loader, dev_loader, test_loader, device, l
     }
 
 
-def main():
+def train_and_predict_CNN_LSTM():
     seed = 13
     set_seed(seed)
 
@@ -251,21 +254,8 @@ def main():
             f" Dev Macro F1={ablation_results['f1']:.4f}"
         )
 
+def main():
+    print("Hello, world!")
 
 if __name__ == "__main__":
     main()
-
-"""
-    present_results(train_ds, dev_ds, test_ds, seed, model_logistic_reg, "Logistic Regression", "Confusion Matrix, model TF-IDF + Logistic Regression", "cm_reg.png")
-    present_results(train_ds, dev_ds, test_ds, seed, model_linear_svm, "Linear SVM", "Confusion Matrix, model: TF-IDF + Linear SVM", "cm_svm.png")
-    
-    model_LSTM = LSTMClassifier
-
-    ablation_param = [0.1, 0.3, 0.5]
-
-    for param in ablation_param:
-        model_LSTM = LSTMClassifier(dropout=param)
-
-if __name__ == "__main__":
-    main()
-"""

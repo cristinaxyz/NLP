@@ -76,7 +76,6 @@ def train_epoch(model, loader, optimizer, criterion, device):
     train_acc = correct/max(1,n)
     return train_loss, train_acc
 
-
 def evaluate(model, loader, device) -> dict:
     model.eval()
     all_y = []
@@ -220,7 +219,3 @@ def plot_learning_curves(results, key: str, title: str, ylabel: str, path: str):
     plt.tight_layout()
     plt.savefig(path)
     plt.close()
-    
-    #in main/py
-    #plot_learning_curves([res_lstm, res_cnn], "val_loss", "Validation loss", "loss")
-    #plot_learning_curves([res_lstm, res_cnn], "val_f1", "Validation macro F1", "macro F1")
