@@ -4,7 +4,7 @@ import torch
 from transformers import Trainer, TrainingArguments
 from transformers import AutoTokenizer
 
-def distilbert_model(train_ds, dev_ds, test_ds):
+def distilbert_model(train_ds, dev_ds, test_ds, learning_rate=2e-5):
     """
     fine tuning of a pretrained model
 
@@ -31,7 +31,7 @@ def distilbert_model(train_ds, dev_ds, test_ds):
     
     def tokenize_function(items):
         texts = [t + " " + d for t, d in zip(items["title"], items["description"])]
-        return tokenizer(texts, padding="max_length", truncation=True)
+        return tokenizer(texts, padding="max_length", truncation=True, max_length=128)
 
     tokenized_train = train_ds.map(tokenize_function, batched=True)
     tokenized_test = test_ds.map(tokenize_function, batched=True)
@@ -48,7 +48,7 @@ def distilbert_model(train_ds, dev_ds, test_ds):
     training_args = TrainingArguments(
         eval_strategy="epoch",
         logging_strategy="epoch",
-        learning_rate=2e-5,
+        learning_rate=learning_rate,
         per_device_train_batch_size=8,
         per_device_eval_batch_size=8,
         num_train_epochs=5,
@@ -65,14 +65,18 @@ def distilbert_model(train_ds, dev_ds, test_ds):
     #Fine-tuning the model
     trainer.train()
 
-    # Get predictions (logits)
+    #this is for the parameter selection
+    dev_pred = trainer.predict(tokenized_dev)
+    dev_logits = dev_pred.predictions
+    dev_predicted_labels = torch.argmax(torch.tensor(dev_logits), dim=1)
+    dev_true_labels = dev_pred.label_ids
+
+    # Get final redictions (logits)
     pred = trainer.predict(tokenized_test)
     logits = pred.predictions
     predicted_labels = torch.argmax(torch.tensor(logits), dim=1)
-
-    #get true labels
     true_labels = pred.label_ids
 
-    return true_labels, predicted_labels
+    return dev_true_labels, dev_predicted_labels, true_labels, predicted_labels
 
 
