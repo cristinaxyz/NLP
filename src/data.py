@@ -9,8 +9,6 @@ from torch.utils.data import Dataset, DataLoader
 
 from dataclasses import dataclass
 
-from transformers import AutoTokenizer
-
 @dataclass
 class Batch:
     x: torch.Tensor
@@ -153,4 +151,5 @@ def build_loaders(train_ds, dev_ds, test_ds, batch_size=32, max_length=200):
     )
 
     return train_loader, dev_loader, test_loader, vocab, pad_idx
+
 
