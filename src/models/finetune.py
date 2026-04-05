@@ -2,8 +2,7 @@
 from transformers import AutoModelForSequenceClassification
 import torch
 from transformers import Trainer, TrainingArguments
-from ..data import build_tokenizer
-
+from transformers import AutoTokenizer
 
 def distilbert_model(train_dataset, test_ds, dev_ds):
     """
@@ -15,19 +14,26 @@ def distilbert_model(train_dataset, test_ds, dev_ds):
         test_ds (_type_): _description_
     """
     #GPU usage
+    print(torch.cuda.is_available())
     device = 0 if torch.cuda.is_available() else -1
 
-    #Preprocess data
-    model_name = "distilbert-base-uncased" #We are using distilBERT
-    tokenize_fn = build_tokenizer(model_name)
-    tokenized_train = train_dataset.map(tokenize_fn, batched=True)
-    tokenized_test = test_ds.map(tokenize_fn, batched=True)
-    tokenized_dev = dev_ds.map(tokenize_fn, batched=True)
+    model_name = "distilbert-base-uncased"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     
+    def tokenize_function(items):
+        texts = [t + " " + d for t, d in zip(items["title"], items["description"])]
+        return tokenizer(texts, padding="max_length", truncation=True)
+
+    tokenized_train = train_dataset.map(tokenize_function, batched=True)
+    tokenized_test = test_ds.map(tokenize_function, batched=True)
+    tokenized_dev = dev_ds.map(tokenize_function, batched=True)
+
+    tokenized_train = tokenized_train.rename_column("label", "labels")
+    tokenized_test = tokenized_test.rename_column("label", "labels")
+    tokenized_dev = tokenized_dev.rename_column("label", "labels")
+
     #Load a pretrained model
-    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4).to(
-        device
-    )
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=5)
 
     #Set up the trainer
     training_args = TrainingArguments(
