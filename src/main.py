@@ -258,26 +258,78 @@ def train_and_predict_CNN_LSTM():
 def main():
     seed = 13
     train_ds, dev_ds, test_ds = load_data(seed)
+
     print("Train size:", len(train_ds))
     print("Dev size:", len(dev_ds))
     print("Test size:", len(test_ds))
-    dev_y, dev_pred, test_y, test_pred = distilbert_model(train_ds, dev_ds, test_ds)
-    
-    dev_acc, dev_macro_f1, dev_cm = evaluate_predictions(dev_y, dev_pred)
-    test_acc, test_macro_f1, test_cm = evaluate_predictions(test_y, test_pred)
 
-    print("Development Results for distilbert:")
+    print("\nDistilBERT learning rate test")
+
+    best_lr = None
+    best_lr_f1 = 0
+
+    for lr in [2e-5, 3e-5, 5e-5]:
+        print(f"\nTraining with learning rate = {lr}")
+
+        dev_y, dev_pred, test_y, test_pred = distilbert_model(
+            train_ds, dev_ds, test_ds,
+            learning_rate=lr,
+            batch_size=8
+        )
+
+        dev_acc, dev_f1, _ = evaluate_predictions(dev_y, dev_pred)
+
+        print(f"lr={lr} | dev acc={dev_acc:.4f} | dev f1={dev_f1:.4f}")
+
+        if dev_f1 > best_lr_f1:
+            best_lr_f1 = dev_f1
+            best_lr = lr
+
+    print("\nBest learning rate:", best_lr)
+
+    print("\nDistilBERT batch size test")
+
+    best_bs = None
+    best_bs_f1 = 0
+
+    for bs in [8, 16]:
+        print(f"\nTraining with batch size = {bs}")
+
+        dev_y, dev_pred, test_y, test_pred = distilbert_model(
+            train_ds, dev_ds, test_ds,
+            learning_rate=best_lr,
+            batch_size=bs
+        )
+
+        dev_acc, dev_f1, _ = evaluate_predictions(dev_y, dev_pred)
+
+        print(f"bs={bs} | dev acc={dev_acc:.4f} | dev f1={dev_f1:.4f}")
+
+        if dev_f1 > best_bs_f1:
+            best_bs_f1 = dev_f1
+            best_bs = bs
+
+    print("\nBest batch size:", best_bs)
+
+    print("\nFinal DistilBERT run")
+
+    dev_y, dev_pred, test_y, test_pred = distilbert_model(
+        train_ds, dev_ds, test_ds,
+        learning_rate=best_lr,
+        batch_size=best_bs
+    )
+
+    dev_acc, dev_f1, dev_cm = evaluate_predictions(dev_y, dev_pred)
+    test_acc, test_f1, test_cm = evaluate_predictions(test_y, test_pred)
+
+    print("Dev results:")
     print("Accuracy:", dev_acc)
-    print("Macro F1:", dev_macro_f1)
-    print("Confusion Matrix:", dev_cm)
+    print("F1:", dev_f1)
+    print("\nTest results:")
+    print("Accuracy:", test_acc)
+    print("F1:", test_f1)
 
-    print("Test results for DistilBERT:")
-    print("Accuracy:", test_acc)
-    print("Macro F1:", test_macro_f1)
-    print("Confusion Matrix:", test_cm)
-    print("Accuracy:", test_acc)
-    print("Macro F1:", test_macro_f1)
-    print("Confusion Matrix:", test_cm)
     plot_cm(test_cm, "Confusion Matrix, model distilbert", "output/cm_distilbert.png")
+
 if __name__ == "__main__":
     main()
