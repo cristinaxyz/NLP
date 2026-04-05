@@ -256,7 +256,17 @@ def train_and_predict_CNN_LSTM():
         )
 
 def main():
-    print("Hello, world!")
-
+    seed = 13
+    train_ds, dev_ds, test_ds = load_data(seed)
+    print("Train size:", len(train_ds))
+    print("Dev size:", len(dev_ds))
+    print("Test size:", len(test_ds))
+    y_true, y_pred = distilbert_model(train_ds, dev_ds, test_ds)
+    acc, macro_f1, cm = evaluate_predictions(y_true, y_pred)
+    print("Results for distilbert:")
+    print("Accuracy:", acc)
+    print("Macro F1:", macro_f1)
+    print("Confusion Matrix:", cm)
+    plot_cm(cm, "Confusion Matrix, model distilbert", "output/cm_distilbert.png")
 if __name__ == "__main__":
     main()
