@@ -4,7 +4,7 @@ import torch
 from transformers import Trainer, TrainingArguments
 from transformers import AutoTokenizer
 
-def distilbert_model(train_ds, dev_ds, test_ds, learning_rate=2e-5):
+def distilbert_model(train_ds, dev_ds, test_ds, learning_rate=2e-5, batch_size=8):
     """
     fine tuning of a pretrained model
 
@@ -49,8 +49,8 @@ def distilbert_model(train_ds, dev_ds, test_ds, learning_rate=2e-5):
         eval_strategy="epoch",
         logging_strategy="epoch",
         learning_rate=learning_rate,
-        per_device_train_batch_size=8,
-        per_device_eval_batch_size=8,
+        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=batch_size,
         num_train_epochs=5,
         weight_decay=0.01,
     )
