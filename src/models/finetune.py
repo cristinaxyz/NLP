@@ -3,6 +3,7 @@ from transformers import AutoModelForSequenceClassification
 import torch
 from transformers import Trainer, TrainingArguments
 from transformers import AutoTokenizer
+from sklearn.metrics import accuracy_score, f1_score
 
 def distilbert_model(train_ds, dev_ds, test_ds, learning_rate=2e-5, batch_size=8):
     """
@@ -46,24 +47,47 @@ def distilbert_model(train_ds, dev_ds, test_ds, learning_rate=2e-5, batch_size=8
 
     #Set up the trainer
     training_args = TrainingArguments(
+        output_dir="trainer_output",
         eval_strategy="epoch",
+        save_strategy="epoch",
         logging_strategy="epoch",
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
+        save_total_limit=5,
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         num_train_epochs=5,
         weight_decay=0.01,
+        report_to="none",
     )
+
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        preds = logits.argmax(axis=1)
+
+        acc = accuracy_score(labels, preds)
+        f1 = f1_score(labels, preds, average="macro")
+
+        return {
+            "accuracy": acc,
+            "f1": f1,
+        }
 
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=tokenized_train,
         eval_dataset=tokenized_test,
+        compute_metrics=compute_metrics,
     )
 
     #Fine-tuning the model
     trainer.train()
+
+    eval_results = trainer.evaluate(tokenized_dev)
+    print(eval_results)
 
     #this is for the parameter selection
     dev_pred = trainer.predict(tokenized_dev)
