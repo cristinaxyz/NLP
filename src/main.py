@@ -8,10 +8,12 @@ from models.Linear_svm import model_linear_svm
 from models.logistic_regression import model_logistic_reg
 from models.finetune import distilbert_model
 from pandas import DataFrame
+from evaluation import get_misclassified_examples_from_predictions
 import time 
 import random 
 import numpy as np
-
+from models.finetune import distilbert_predict_from_checkpoint
+from pathlib import Path
 def present_results(train_ds, dev_ds, test_ds, seed, model, model_name, plot_title, plot_file_name):
     y_test, y_pred = model(train_ds, dev_ds, test_ds, seed)
     acc, macro_f1, cm = evaluate_predictions(y_test, y_pred)
@@ -254,7 +256,7 @@ def train_and_predict_CNN_LSTM():
             f" Dev Accuracy={ablation_results['acc']:.4f} | "
             f" Dev Macro F1={ablation_results['f1']:.4f}"
         )
-
+"""
 def main():
     seed = 13
     train_ds, dev_ds, test_ds = load_data(seed)
@@ -329,7 +331,47 @@ def main():
     print("Accuracy:", test_acc)
     print("F1:", test_f1)
 
+    errs_distilbert = get_misclassified_examples_from_predictions(
+    test_y,
+    test_pred,
+    test_ds,
+    max_items=10,
+)
+
+    show_errors("DistilBERT errors", errs_distilbert)
+
     plot_cm(test_cm, "Confusion Matrix, model distilbert", "output/cm_distilbert.png")
+
+
+    
+
+if __name__ == "__main__":
+    main()
+"""
+
+def main():
+    seed = 13
+    train_ds, dev_ds, test_ds = load_data(seed)
+
+    checkpoint_path = Path(__file__).resolve().parent.parent / "trainer_output" / "checkpoint-13500"
+
+    print("Using checkpoint:", checkpoint_path)
+    print("Exists:", checkpoint_path.exists())
+
+    dev_y, dev_pred, test_y, test_pred = distilbert_predict_from_checkpoint(
+        dev_ds,
+        test_ds,
+        str(checkpoint_path)
+)
+
+    errs = get_misclassified_examples_from_predictions(
+        test_y,
+        test_pred,
+        test_ds,
+        max_items=10,
+    )
+
+    show_errors("DistilBERT errors", errs)
 
 if __name__ == "__main__":
     main()

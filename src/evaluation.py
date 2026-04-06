@@ -42,6 +42,21 @@ def get_misclassified_examples(model: nn.Module, raw_split, vocab, max_length, d
 
     return errs
 
+def get_misclassified_examples_from_predictions(y_true, y_pred, raw_split, max_items: int = 10):
+    errs = []
+
+    for i, (true_label, pred_label) in enumerate(zip(y_true, y_pred)):
+        if int(true_label) != int(pred_label):
+            text = raw_split[i]["title"] + " " + raw_split[i]["description"]
+            snippet = text.replace("\n", " ")
+            snippet = snippet[:250] + ("..." if len(snippet) > 250 else "")
+            errs.append((int(true_label), int(pred_label), snippet))
+
+        if len(errs) >= max_items:
+            break
+
+    return errs
+
 def show_errors(name: str, errs):
     print(name)
     for i,(y,p,snip) in enumerate(errs):

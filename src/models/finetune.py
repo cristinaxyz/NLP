@@ -44,7 +44,7 @@ def distilbert_model(train_ds, dev_ds, test_ds, learning_rate=2e-5, batch_size=8
 
     #Load a pretrained model
     model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=4)
-
+ 
     #Set up the trainer
     training_args = TrainingArguments(
         output_dir="trainer_output",
@@ -84,7 +84,7 @@ def distilbert_model(train_ds, dev_ds, test_ds, learning_rate=2e-5, batch_size=8
     )
 
     #Fine-tuning the model
-    trainer.train()
+    #trainer.train()
 
     eval_results = trainer.evaluate(tokenized_dev)
     print(eval_results)
@@ -104,3 +104,52 @@ def distilbert_model(train_ds, dev_ds, test_ds, learning_rate=2e-5, batch_size=8
     return dev_true_labels, dev_predicted_labels, true_labels, predicted_labels
 
 
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
+
+def distilbert_predict_from_checkpoint(dev_ds, test_ds, checkpoint_path):
+    def shift_labels(example):
+        example["label"] = example["label"] - 1
+        return example
+
+    dev_ds = dev_ds.map(shift_labels)
+    test_ds = test_ds.map(shift_labels)
+
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+
+    def tokenize_function(items):
+        texts = [t + " " + d for t, d in zip(items["title"], items["description"])]
+        return tokenizer(
+            texts,
+            padding="max_length",
+            truncation=True,
+            max_length=128,
+        )
+
+    tokenized_dev = dev_ds.map(tokenize_function, batched=True)
+    tokenized_test = test_ds.map(tokenize_function, batched=True)
+
+    tokenized_dev = tokenized_dev.rename_column("label", "labels")
+    tokenized_test = tokenized_test.rename_column("label", "labels")
+
+    model = AutoModelForSequenceClassification.from_pretrained(checkpoint_path)
+
+    training_args = TrainingArguments(
+        output_dir="trainer_output_eval",
+        report_to="none",
+        per_device_eval_batch_size=16,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+    )
+
+    dev_pred = trainer.predict(tokenized_dev)
+    dev_predicted_labels = torch.argmax(torch.tensor(dev_pred.predictions), dim=1)
+    dev_true_labels = dev_pred.label_ids
+
+    test_pred = trainer.predict(tokenized_test)
+    test_predicted_labels = torch.argmax(torch.tensor(test_pred.predictions), dim=1)
+    test_true_labels = test_pred.label_ids
+
+    return dev_true_labels, dev_predicted_labels, test_true_labels, test_predicted_labels
